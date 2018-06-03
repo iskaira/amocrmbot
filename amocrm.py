@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#import sys
-# sys.setdefaultencoding() does not exist, here!
-#reload(sys)  # Reload does the trick!
-#sys.setdefaultencoding('UTF8')
 # -*- coding: utf-8 -*-
 import telebot
 from time import sleep
@@ -34,15 +28,15 @@ query_dict={}
 user_kp_dict={}
 
 postdata = {'USER_HASH': constants.hash, 'USER_LOGIN':constants.login }
-r = s.post('https://dbp.amocrm.ru/', data=postdata)
+r = s.post('AMOCRM_URL', data=postdata)
 print (r.status_code)
 
-WEBHOOK_HOST = '46.101.124.15'
+WEBHOOK_HOST = 'HOST_IP_ADDRESS'
 WEBHOOK_PORT = 443  # 443, 80, 88 or 8443 (port need to be 'open')
 WEBHOOK_LISTEN = '0.0.0.0'  # In some VPS you may need to put here the IP addr
 
-WEBHOOK_SSL_CERT = 'amocrm/webhook_cert.pem'  # Path to the ssl certificate
-WEBHOOK_SSL_PRIV = 'amocrm/webhook_pkey.pem'  # Path to the ssl private key
+WEBHOOK_SSL_CERT = ''  # Path to the ssl certificate
+WEBHOOK_SSL_PRIV = ''  # Path to the ssl private key
 
 WEBHOOK_URL_BASE = "https://%s:%s" % (WEBHOOK_HOST, WEBHOOK_PORT)
 WEBHOOK_URL_PATH = "/%s/" % (API_TOKEN)
@@ -123,29 +117,18 @@ def check_contact(message):
 	try:
 		check_contact=s.get('https://dbp.amocrm.ru/private/api/v2/json/contacts/list?query='+str(message)+'&type=contact')# Поиск по ID
 		if check_contact.status_code in good:
-			#bot.send_message(295091909,r.status_code)
-			return len(check_contact.content)>0
-			'''
-			name = check_contact.json()
-			user_id=name['response']['contacts'][0]['name']
-			if user_id==str(message):
-				return name['response']['contacts'][0]['custom_fields'][1]['values'][0]['value']
-			else:
-				return False
-			'''	
+			return len(check_contact.content)>0	
 		else:
-			#bot.send_message(295091909,r.status_code)
 			s = requests.Session()
 			r = s.post('https://dbp.amocrm.ru/', data=postdata)
 			check_contact=s.get('https://dbp.amocrm.ru/private/api/v2/json/contacts/list?query='+str(message)+'&type=contact')# Поиск по ID
 			return len(check_contact.content)>0
-		#bot.send_message(295091909,r.status_code)
 		
 	except Exception as e:
-		bot.send_message(295091909,str(e)+' check_contact :')
+		bot.send_message("Some_ID",str(e)+' check_contact :')
 
 def check_follow(message): # Временно отключить
-	check_contact = s.get('https://dbp.amocrm.ru/private/api/v2/json/customers/list?term='+str(message))# Поиск по ID
+	check_contact = s.get('https://USERNAME.amocrm.ru/private/api/v2/json/customers/list?term='+str(message))# Поиск по ID
 	print (check_contact.status_code)
 	data=check_contact.json()
 	print(data)
@@ -202,6 +185,7 @@ def process_ID_step(message):
     except Exception as e:
         print(e)
         bot.reply_to(message, 'Опаньки что-то пошло не так, Process_ID')
+	
 def process_email_step(message):
     try:
         chat_id = message.from_user.id
@@ -213,6 +197,7 @@ def process_email_step(message):
     except Exception as e:
         print(e)
         bot.reply_to(message, 'Опаньки что-то пошло не так, Process_Email')
+	
 def process_phone_step(message):
     try:
         chat_id = message.from_user.id
@@ -224,6 +209,7 @@ def process_phone_step(message):
     except Exception as e:
         print(e)
         bot.reply_to(message, 'Опаньки что-то пошло не так, Process_Phone')
+	
 def process_TOO_step(message):
 	try:
 		chat_id = message.from_user.id
@@ -303,11 +289,8 @@ def process_TOO_step(message):
 						}
 					}
 				}
-		post_contact = s.post('https://dbp.amocrm.ru/private/api/v2/json/contacts/set',data=json.dumps(postdata))
-		print (post_contact.status_code)
-		print (post_contact.content)
+		post_contact = s.post('https://USERNAME.amocrm.ru/private/api/v2/json/contacts/set',data=json.dumps(postdata))
 		contact_id=(post_contact.json()['response']['contacts']['add'][0]["id"])
-		print (contact_id)
 		customer={"request": {
 					"customers": {
 						"add": [
@@ -319,7 +302,7 @@ def process_TOO_step(message):
 								}
 								],
 								}}}
-		post_customer = s.post('https://dbp.amocrm.ru/private/api/v2/json/customers/set',data=json.dumps(customer))
+		post_customer = s.post('https://USERNAME.amocrm.ru/private/api/v2/json/customers/set',data=json.dumps(customer))
 		customer_id=(post_customer.json()['response']['customers']['add']['customers'][0]["id"])
 		customer_set_contact={
 								"request": {
@@ -335,7 +318,8 @@ def process_TOO_step(message):
 								}
 								}
 								}
-		customer_to_lead = s.post('https://dbp.amocrm.ru/private/api/v2/json/links/set',data=json.dumps(customer_set_contact))
+		customer_to_lead = s.post('https://USERNAME.amocrm.ru/private/api/v2/json/links/set',data=json.dumps(customer_set_contact))
+		
 		if post_customer.status_code==200 and post_contact.status_code==200:
 			bot.send_message(chat_id,"Регистрация успешно пройдена! Приятного использования")
 			next_prev_markup = telebot.types.InlineKeyboardMarkup()
@@ -353,14 +337,8 @@ def process_TOO_step(message):
 			bot.send_message(295091909,":NOT ERROR REGISTRATION STEP\nFrom user: @"+message.from_user.username+"\nFROM ID: "+message.from_user.id+"\ninfo:"+user.name+", "+user.ID+", "+user.phone+", "+user.email+", "+user.TOO+"\nADDITIONAL: "+post_contact.status_code+" = status, content = "+post_contact.content+", text = "+r.text)
 
 	except Exception as e:
-		#print(e)
 		bot.send_message(message.from_user.id,"Система не смогла зарегестрировать вас, прошу сделать запрос позже...")
-		bot.send_message(295091909,str(e)+": REGISTRATION STEP\nFrom user: "+message.from_user.username+"\nFROM ID: "+message.from_user.id+"\ninfo:"+user.name+", "+user.ID+", "+user.phone+", "+user.email+", "+user.TOO+"\nADDITIONAL: "+post_contact.status_code+" = status, content = "+post_contact.content+", text = "+r.text)
-
-		
-
-		#bot.reply_to(message, "Система не смогла зарегестрировать вас, прошу сделать запрос позже...")
-
+		bot.send_message("Some_ID",str(e)+": REGISTRATION STEP\nFrom user: "+message.from_user.username+"\nFROM ID: "+message.from_user.id+"\ninfo:"+user.name+", "+user.ID+", "+user.phone+", "+user.email+", "+user.TOO+"\nADDITIONAL: "+post_contact.status_code+" = status, content = "+post_contact.content+", text = "+r.text)
 
 
 @bot.message_handler(commands=['searchproduct'])
@@ -371,7 +349,6 @@ def searchproduct(message):
 		msg = bot.send_message(message.from_user.id, "Введите полную техническую спецификацию продукта ")
 		bot.register_next_step_handler(msg, process_searchproduct_step)
 	else:
-		print ('Не зареган')
 		print (message.from_user.id)
 		bot.send_message(message.from_user.id,'Вы не зарегестрированы, нажмите на команду /start')
 
@@ -413,7 +390,6 @@ def searchsame(call):
 		msg = bot.send_message(call.from_user.id, "Введите полную техническую спецификацию продукта ")
 		bot.register_next_step_handler(msg, process_searchsame_step)
 	else:
-		print ('Не зареган')
 		print (call.from_user.id)
 		bot.send_message(call.from_user.id,'Вы не зарегестрированы, нажмите на команду /start')
 
@@ -432,13 +408,13 @@ def back(call):
 		next_prev_markup.row(*row)
 		next_prev_markup.row(*row2)
 		next_prev_markup.row(*row4)
-		#bot.edit_message_text(temp_response, call.from_user.id, call.message.message_id, reply_markup=next_prev_markup)
 		bot.edit_message_text("Вы в главном меню "+u"\U0001F3AF"+"\n\n" + "* Для поиска продукта нажмите на кнопку \n[ "+u"\U0001F50D"+" Поиск товара ]\n* Для запроса аналога продукта нажмите на кнопку \n[ "+u"\U0001F4DD"+" Найти аналог ]\n * Для запроса КП нажмите на кнопку \n[ "+u"\U0001F4E3"+" заказать КП ]", call.from_user.id, call.message.message_id,reply_markup=next_prev_markup)
-		#Error
 	else:
 		print ('Не зареган')
 		print (call.from_user.id)
 		bot.send_message(call.from_user.id,'Вы не зарегестрированы, нажмите на команду /start')
+
+		
 @bot.callback_query_handler(func=lambda call: call.data[:12] == 'limit_offset')
 def next(call):
 	global global_row2
@@ -477,7 +453,6 @@ def next(call):
 		bot.send_message(call.from_user.id,"Сначала создайте запрос по команде /search.")
 
 ########################################################################Start_search#########################################################################################################################################################################################################################################################################################################################
-##########################################################################################################################################################################################################################################################
 
 @bot.callback_query_handler(func=lambda call: call.data == '/takekp')
 def starting_takekp(message):
@@ -488,8 +463,6 @@ def starting_takekp(message):
 		msg = bot.send_message(message.from_user.id, "Код товара поставщика")
 		bot.register_next_step_handler(msg, process_code_step)
 	else:
-		print ('не зареган')
-		print (message.from_user.id)
 		bot.send_message(message.from_user.id,'Вы не зарегестрированы, нажмите на команду /start')
 		
 def process_code_step(message):
@@ -501,7 +474,6 @@ def process_code_step(message):
         msg =  bot.send_message(chat_id, 'Количество товара')
         bot.register_next_step_handler(msg, process_kol_step)
     except Exception as e:
-        print(e)
         bot.reply_to(message, 'Опаньки что-то пошло не так')
 
 def process_kol_step(message):
@@ -517,7 +489,6 @@ def process_kol_step(message):
         msg =  bot.send_message(chat_id, 'Адрес поставки')
         bot.register_next_step_handler(msg, process_address_step)
     except Exception as e:
-        print(e)
         bot.reply_to(message, 'Опаньки что-то пошло не так, сообщите @kirosoftware')
 def process_address_step(message):
     try:
@@ -528,7 +499,6 @@ def process_address_step(message):
         msg = bot.send_message(chat_id, 'Дата поставки в формате ГГГГ-ММ-ДД, например: 2018-02-05')
         bot.register_next_step_handler(msg, process_date_step)
     except Exception as e:
-        print(e)
         bot.reply_to(message, 'Опаньки что-то пошло не так, сообщите @kirosoftware')
 def process_date_step(message):
 	try:
@@ -572,14 +542,11 @@ def process_date_step(message):
 		}
 		]
 		}}}
-		set_leads = s.post('https://dbp.amocrm.ru/private/api/v2/json/leads/set',data=json.dumps(leads))
-		#print (set_leads.status_code)
+		set_leads = s.post('https://USERNAME.amocrm.ru/private/api/v2/json/leads/set',data=json.dumps(leads))
 		lead_id=(set_leads.json()['response']['leads']['add'][0]["id"])
-		print (lead_id)
-
 
 		##########################SET TOVAR_INFO################################
-		request_info="https://dbp.amocrm.ru/contacts/detail/"+str(user_kp.code)
+		request_info="https://USERNAME.amocrm.ru/contacts/detail/"+str(user_kp.code)
 		lead_set_info={
 		"request":  {
 		"notes":  {
@@ -596,12 +563,9 @@ def process_date_step(message):
 		}
 		}
 		}
-		get_contact=s.get('https://dbp.amocrm.ru/private/api/v2/json/contacts/list?query='+str(chat_id))
+		get_contact=s.get('https://USERNAME.amocrm.ru/private/api/v2/json/contacts/list?query='+str(chat_id))
 		contact_id=get_contact.json()['response']['contacts'][0]['id']
-		info_to_lead= s.post('https://dbp.amocrm.ru/private/api/v2/json/notes/set',data=json.dumps(lead_set_info))
-		print (info_to_lead.status_code)
-		#print (info_to_lead.content)
-
+		info_to_lead= s.post('https://USERNAME.amocrm.ru/private/api/v2/json/notes/set',data=json.dumps(lead_set_info))
 		lead_set_contact={
 		"request": {
 		"links": {
@@ -616,7 +580,7 @@ def process_date_step(message):
 		}
 		}
 		}
-		contact_to_lead = s.post('https://dbp.amocrm.ru/private/api/v2/json/links/set',data=json.dumps(lead_set_contact))
+		contact_to_lead = s.post('https://USERNAME.amocrm.ru/private/api/v2/json/links/set',data=json.dumps(lead_set_contact))
 		print(contact_to_lead.status_code)
 		print(info_to_lead.content)
 		bot.send_message(chat_id,"Ваша заявка принята на обработку, логист скоро отправит Контрольное предложение вам на почту\n")
@@ -630,7 +594,6 @@ def process_date_step(message):
 
 		bot.send_message(message.from_user.id,"Вы в главном меню "+u"\U0001F3AF"+"\n\n" + "* Для поиска продукта нажмите на кнопку \n[ "+u"\U0001F50D"+" Поиск товара ]\n* Для запроса аналога продукта нажмите на кнопку \n[ "+u"\U0001F4DD"+" Найти аналог ]\n * Для запроса КП нажмите на кнопку \n[ "+u"\U0001F4E3"+" заказать КП ]", reply_markup=next_prev_markup)
 	except Exception as e:
-		print(e)
 		bot.reply_to(message, 'Опаньки что-то пошло не так, сообщите @kirosoftware')
 
 
@@ -644,8 +607,6 @@ def next(call):
 		msg = bot.send_message(call.from_user.id, "Введите ключевые слова (например марку или модель продукта) что бы найти её в базе поставщиков.")
 		bot.register_next_step_handler(msg, process_search_step)
 	else:
-		print ('Не зареган')
-		print (call.from_user.id)
 		bot.send_message(call.from_user.id,'Вы не зарегестрированы, нажмите на команду /start')
 def process_search_step(message):
 	global global_row2
@@ -654,10 +615,8 @@ def process_search_step(message):
 		query_ = message.text
 		query = Query(query_)
 		query_dict[chat_id] = query
-		print(query.query)
 		bot.send_message(message.from_user.id,"Идет поиск товара, ожидайте...")
-		response=s.get('https://dbp.amocrm.ru/private/api/v2/json/contacts/list/?query='+query.query)# Поиск по контрактам
-		print (response.status_code)	
+		response=s.get('https://USERNAME.amocrm.ru/private/api/v2/json/contacts/list/?query='+query.query)# Поиск по контрактам
 		if len(response.content)==0:
 			print("Подобный товар не найден, попробуйте другое ключевое слово или запросите найти данный товар у менеджера")
 			next_prev_markup = telebot.types.InlineKeyboardMarkup()			
@@ -667,7 +626,6 @@ def process_search_step(message):
 			next_prev_markup.row(*row2)
 			bot.send_message(message.from_user.id,"Подобный товар не найден, попробуйте другое ключевое слово или запросите найти данный товар у менеджера",reply_markup=next_prev_markup)
 		else:	
-			#print (response.content)
 			data = response.json()
 			if (data['response']['contacts'][0]['name'].isdigit()) and data['response']['contacts'][0]['custom_fields'][0]['id']=='384511':
 				print("Найден юзверь")
@@ -702,12 +660,8 @@ def process_search_step(message):
 					for i in range(10):
 						temp_response+=str(i+1)+') '+data['response']['contacts'][i]['name']+'( /'+str(data['response']['contacts'][i]['id'])+' )\n'
 					bot.send_message(message.from_user.id,temp_response,reply_markup=next_prev_markup)
-		############################################################# NEED REPLY_MARKUP /PAY ############################################################################################
-		#bot.send_message(message.from_user.id,"Ваша подписка на бота закончилась, чтобы ее продлить оплатите подписку. Что бы это сделать введите /pay")
 	except Exception as e:
-		print(e)
-		bot.send_message(295091909,str(e)+'Search step:')
-		#bot.reply_to(message, 'Опаньки, что-то пошло не так. Сообщите @kirosoftware')
+		bot.send_message("Some_ID", str(e) + ' Search step:')
 ########################################################/END_Search#######################################################################################################################
 
 @bot.callback_query_handler(func=lambda call: call.data == '/searchsame')
@@ -718,8 +672,6 @@ def searchsame(call):
 		msg = bot.send_message(call.from_user.id, "Введите полную техническую спецификацию продукта ")
 		bot.register_next_step_handler(msg, process_searchsame_step)
 	else:
-		print ('Не зареган')
-		print (call.from_user.id)
 		bot.send_message(call.from_user.id,'Вы не зарегестрированы, нажмите на команду /start')
 def process_searchsame_step(message):
 	try:
@@ -734,10 +686,9 @@ def process_searchsame_step(message):
 		}
 		]
 		}}}
-		set_leads = s.post('https://dbp.amocrm.ru/private/api/v2/json/leads/set',data=json.dumps(leads))
+		set_leads = s.post('https://USERNAME.amocrm.ru/private/api/v2/json/leads/set',data=json.dumps(leads))
 		print (set_leads.status_code)
 		lead_id=(set_leads.json()['response']['leads']['add'][0]["id"])
-		#print (lead_id)
 		analog_info=message.text
 		lead_set_info={
 					"request":  {
@@ -755,13 +706,9 @@ def process_searchsame_step(message):
 					}
 					}
 					}
-		info_to_lead= s.post('https://dbp.amocrm.ru/private/api/v2/json/notes/set',data=json.dumps(lead_set_info))
-		print (info_to_lead.status_code)
-		#print (info_to_lead.content)
-		get_contact=s.get('https://dbp.amocrm.ru/private/api/v2/json/contacts/list?query='+str(message.from_user.id))
-		
+		info_to_lead= s.post('https://USERNAME.amocrm.ru/private/api/v2/json/notes/set',data=json.dumps(lead_set_info))
+		get_contact=s.get('https://USERNAME.amocrm.ru/private/api/v2/json/contacts/list?query='+str(message.from_user.id))		
 		contact_id=get_contact.json()['response']['contacts'][0]['id']
-		print (contact_id)
 		lead_set_contact={
 		"request": {
 		"links": {
@@ -776,17 +723,12 @@ def process_searchsame_step(message):
 		}
 		}
 		}
-		contact_to_lead = s.post('https://dbp.amocrm.ru/private/api/v2/json/links/set',data=json.dumps(lead_set_contact))
-		print(contact_to_lead.status_code)
-		print(info_to_lead.content)
+		contact_to_lead = s.post('https://USERNAME.amocrm.ru/private/api/v2/json/links/set',data=json.dumps(lead_set_contact))
 
 		bot.send_message(message.from_user.id, "Запрос на поиск аналога принят в обработку, менеджер передаст наше  предложение по готовности на почту")
 		#Запрос на поиск аналога принят в обработку, менеджер передаст наше  предложение по готовности на почту
 	except Exception as e:
-		#print(e)
-		bot.send_message(295091909,str(e)+'Searchsame :')
-		bot.reply_to(message, 'Опаньки что-то пошло не так, сообщите @kirosoftware')
-
+		bot.send_message("Some_ID",str(e)+'Searchsame :')
 #Tovar
 @bot.message_handler(content_types=['text']) 
 def tovar_info(message):
@@ -797,9 +739,8 @@ def tovar_info(message):
 			have_photo=False
 			photo_link=''
 			product_info=''
-			print (message.text)
 			bot.send_message(message.from_user.id,"Ваш запрос принят, ожидайте...")
-			response=s.get('https://dbp.amocrm.ru/private/api/v2/json/contacts/list?id='+message.text[1:]+'&type=contact')
+			response=s.get('https://USERNAME.amocrm.ru/private/api/v2/json/contacts/list?id='+message.text[1:]+'&type=contact')
 			if len(response.content)==0:
 				bot.send_message(message.from_user.id,"Данный товар не доступен, сообщение отправлено менеджеру. Просим прощения за неудобства.")
 			else:
@@ -807,15 +748,12 @@ def tovar_info(message):
 				i=data['response']['contacts'][0]
 				product_name="<b>"+i['name']+"</b>\n"
 				for j in range(len(i['custom_fields'])):
-					#print(i['custom_fields'][j])	
 					if i['custom_fields'][j]['id']=='384211': # В наличии если есть
-						#print(i['custom_fields'][j]['name'],":\n"+i['custom_fields'][j]['values'][0]['value']) # В наличии
 						have_product=True
 					if i['custom_fields'][j]['id']=='313569': # Описание товара
 						product_info="<b>"+i['custom_fields'][j]['name']+":</b>\n"+i['custom_fields'][j]['values'][0]['value']+'\n\n' # Описание товара(
 					if i['custom_fields'][j]['id']=='384187': # Photo
 						photo_link=i['custom_fields'][j]['values'][0]['value']+'\n\n'
-						#print(photo_link) # Photo
 						have_photo=True # Photo
 
 				get_product="<b>Есть в наличии</b>" if have_product else "<b>Нет в наличии</b>"	
@@ -834,23 +772,18 @@ def tovar_info(message):
 					message_count=ceil(len(answer_text)/2000)
 					for i in range(message_count):
 						if((i+1)*2000)>len(answer_text):
-							#print (answer_text[i*1500:(i+1)*2000]+" END!!!")
 							bot.send_message(message.from_user.id,answer_text[i*2000:len(answer_text)],parse_mode='HTML',reply_markup=next_prev_markup)
 						else:
 							if (i+1)*2000==len(answer_text):
-								#print (answer_text[i*2000:(i+1)*2000]+" END")
 								bot.send_message(message.from_user.id,answer_text[i*2000:(i+1)*2000],parse_mode='HTML',reply_markup=next_prev_markup)
 							else:
 								if i==0:	
-									#print (answer_text[i*2000:(i+1)*2000])
 									bot.send_message(message.from_user.id,answer_text[i*2000:(i+1)*2000],parse_mode='HTML')
 								else:
 									bot.send_message(message.from_user.id,answer_text[i*2000:(i+1)*2000])
 							
 	else:
-		print ('Не зареган')
-		#print (message.from_user.id)
-		#bot.send_message(message.from_user.id,'Вы не зарегестрированы, нажмите на команду /start')
+		bot.send_message(message.from_user.id,'Вы не зарегестрированы, нажмите на команду /start')
 ##########################################################################################################################################################################################################################################################
 
 @bot.callback_query_handler(func=lambda call: call.data == 'ignore')
@@ -886,7 +819,7 @@ def process_searchproduct_step(message):
 		}
 		]
 		}}}
-		set_leads = s.post('https://dbp.amocrm.ru/private/api/v2/json/leads/set',data=json.dumps(leads))
+		set_leads = s.post('https://USERNAME.amocrm.ru/private/api/v2/json/leads/set',data=json.dumps(leads))
 		print (set_leads.status_code)
 		lead_id=(set_leads.json()['response']['leads']['add'][0]["id"])
 		#print (lead_id)
@@ -907,10 +840,8 @@ def process_searchproduct_step(message):
 					}
 					}
 					}
-		info_to_lead= s.post('https://dbp.amocrm.ru/private/api/v2/json/notes/set',data=json.dumps(lead_set_info))
-		print (info_to_lead.status_code)
-		#print (info_to_lead.content)
-		get_contact=s.get('https://dbp.amocrm.ru/private/api/v2/json/contacts/list?query='+str(message.from_user.id))
+		info_to_lead= s.post('https://USERNAME.amocrm.ru/private/api/v2/json/notes/set',data=json.dumps(lead_set_info))
+		get_contact=s.get('https://USERNAME.amocrm.ru/private/api/v2/json/contacts/list?query='+str(message.from_user.id))
 		
 		contact_id=get_contact.json()['response']['contacts'][0]['id']
 		print (contact_id)
@@ -928,13 +859,12 @@ def process_searchproduct_step(message):
 		}
 		}
 		}
-		contact_to_lead = s.post('https://dbp.amocrm.ru/private/api/v2/json/links/set',data=json.dumps(lead_set_contact))
+		contact_to_lead = s.post('https://USERNAME.amocrm.ru/private/api/v2/json/links/set',data=json.dumps(lead_set_contact))
 		print(contact_to_lead.status_code)
 		print(info_to_lead.content)
 
 		bot.send_message(message.from_user.id, "Запрос на поиск товара принят в обработку, менеджер передаст наше предложение по готовности на почту")
 	except Exception as e:
-		print(e)
 		bot.reply_to(message, 'Опаньки что-то пошло не так, сообщите @kirosoftware')
 
 
